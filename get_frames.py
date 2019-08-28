@@ -5,22 +5,30 @@ from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
 import cv2
 
-if __name__ == '__main__':
-    l, r, both, _, _ = process_video(sys.argv[1])
-    l, r = -l, -r
-    print(both)
-    frame_candidates_l_i, _ = find_peaks(both[:,1], height=-1000)
-    frame_candidates_r_i, _ = find_peaks(both[:,3], height=-1000)
-    _, _, _, l_frames, r_frames = process_video(sys.argv[1], return_frames_l_i=frame_candidates_l_i, return_frames_r_i=frame_candidates_r_i)
-    
-    plt.plot(both[:,0], both[:,1], ".")
-    plt.plot(both[:,0], both[:,3], ".")
-    plt.plot(both[frame_candidates_l_i,0], both[frame_candidates_l_i,1], ".")
-    plt.plot(both[frame_candidates_r_i,0], both[frame_candidates_r_i,3], ".")
-    plt.show()
+def get_frames(path, show=False):
+    positions, _ = process_video(path)
 
-    for frame in l_frames + r_frames:
-        cv2.imshow('Test Frame', frame)
-        if cv2.waitKey(0) & 0xFF == ord(' '):
-                continue
+    frame_candidates_l, _ = find_peaks(-positions[:,1], height=-1000)
+    frame_candidates_r, _ = find_peaks(-positions[:,3], height=-1000)
+
+    frame_candidates_l_i = positions[frame_candidates_l.astype(int),0].astype(int)
+    frame_candidates_r_i = positions[frame_candidates_r.astype(int),0].astype(int)
+
+    _, frames = process_video(sys.argv[1], return_frames_i=sorted(list(frame_candidates_l_i)+list(frame_candidates_r_i)))
     
+    if show:
+        plt.plot(positions[:,0], positions[:,1], ".")
+        plt.plot(positions[:,0], positions[:,3], ".")
+        plt.plot(positions[frame_candidates_l,0], positions[frame_candidates_l,1], ".")
+        plt.plot(positions[frame_candidates_r,0], positions[frame_candidates_r,3], ".")
+        plt.show()
+
+        for frame in frames:
+            cv2.imshow('Test Frame', frame)
+            if cv2.waitKey(0) & 0xFF == ord(' '):
+                    continue
+    return frames
+    
+
+if __name__ == '__main__':
+    get_frames(sys.argv[1], show=True)

@@ -6,18 +6,15 @@ import numpy as np
 import os
 import sys
 
-def process_video(path, return_frames_l_i = [], return_frames_r_i = [], show=False, plot=False):
+def process_video(path, return_frames_i = [], show=False, plot=False):
     print(f"processing video {path}")
-    
+
     capture = cv2.VideoCapture(path)
-    l = []
-    r = []
-    both = []
+    positions = []
 
     frame_i = 0
 
-    return_frames_l = []
-    return_frames_r = []
+    return_frames = []
 
     if capture.isOpened():
         frame_captured, frame = capture.read()
@@ -31,28 +28,20 @@ def process_video(path, return_frames_l_i = [], return_frames_r_i = [], show=Fal
         parameters =  aruco.DetectorParameters_create()
         corners_list, ids, _ = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
 
-        if frame_i in return_frames_l_i:
-            return_frames_l.append(gray.copy())
-
-        if frame_i in return_frames_r_i:
-            return_frames_r.append(gray.copy())
+        if frame_i in return_frames_i:
+            return_frames.append(gray.copy())
 
         if show:
             frame = aruco.drawDetectedMarkers(frame, corners_list)
 
         if ids is not None:
-            for id, corners in zip(ids, corners_list):
-                if id == 0:
-                    l.append(np.append(frame_i, np.array(corners[0]).mean(axis=0)))
-                if id == 1:
-                    r.append(np.append(frame_i, np.array(corners[0]).mean(axis=0)))
-
             if list(ids) == [0, 1]:
-                both.append(np.concatenate([
+                positions.append(np.concatenate([
                     [frame_i], 
                     np.array(corners_list[0][0]).mean(axis=0), 
                     np.array(corners_list[1][0]).mean(axis=0)
                     ]))
+
 
         if show:
             cv2.imshow('Test Frame', frame)
@@ -64,17 +53,15 @@ def process_video(path, return_frames_l_i = [], return_frames_r_i = [], show=Fal
     capture.release()
     cv2.destroyAllWindows()
 
-    l = np.array(l)
-    r = np.array(r)
-    both = np.array(both)
+    positions = np.array(positions)
 
     if plot:
-        plt.plot(l[:,0], -l[:,1], ".", label="left")
-        plt.plot(r[:,0], -r[:,1], ".", label="right")
+        plt.plot(positions[:,0], -positions[:,1], ".", label="left")
+        plt.plot(positions[:,0], -positions[:,3], ".", label="right")
         plt.legend()
         plt.show()
     
-    return l, r, both, return_frames_l, return_frames_r
+    return positions, return_frames
 
 
 if __name__ == '__main__':
